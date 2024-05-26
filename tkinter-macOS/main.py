@@ -1,37 +1,12 @@
 import tkinter as tk
-import tkinter.font as tkFont
+
+import tkintertools.animation as animation
+
 from PIL import Image, ImageTk
 from math import floor
+import typing
+
 from modules.location import *
-import animate as animate
-import animate.controllers as controller
-
-class Window(tk.Tk):
-
-    def __init__(self, title: str = "macOS Window", width: int = 200, height: int = 200,
-                 top: int = 20, left: int = 20):
-        super().__init__()
-
-        self.wm_geometry(f"{width}x{height}+{top}+{left}")
-        self.wm_title(title)
-        self.wm_overrideredirect(True)
-
-        self.font = tkFont.Font(family="PingFang", font=("PingFang", 10), file="./fonts/pingfang0.ttf")
-        self.option_add("*Font", self.font)
-
-
-
-class Canvas(tk.Canvas):
-
-    """
-    Main Canvas
-    `master`: Parent window
-    `width`: Canvas width
-    `height`: Canvas height
-    """
-
-    def __init__(self, master: tk.Tk | tk.Toplevel, width, height):
-        super().__init__(master, width=width, height=height)
 
 
 class Misc:
@@ -56,6 +31,107 @@ class Misc:
             percentage.replace("%", "")
             percentage = int(percentage) / 100
             return main * percentage
+
+
+class Window(Misc, tk.Tk):
+
+    def __init__(self, title: str = "tk", width: int = 200, height: int = 200,
+                 top: int = 20, left: int = 20):
+        super().__init__()
+        tk.Tk.__init__(self)
+
+        self.wm_geometry(f"{width}x{height}+{top}+{left}")
+        self.wm_title(title)
+        self.wm_overrideredirect(True)
+        self.configure(bg="#ffffff")
+
+        self.window_tool = [ImageTk.PhotoImage(self.get_image("./images/window-red.png", 12, 12)),
+                            ImageTk.PhotoImage(self.get_image(
+                                "./images/window-yellow.png", 12, 12)),
+                            ImageTk.PhotoImage(self.get_image(
+                                "./images/window-green.png", 12, 12)),
+                            ImageTk.PhotoImage(self.get_image("./images/window-disabled.png", 12, 12))]
+
+        self.text_red = None
+        self.text_green = None
+        self.text_yellow = None
+
+        self.topbar = tk.Canvas(self, width=width, height=26, bg="#efefef")
+        self.red = self.topbar.create_image(14, 14, image=self.window_tool[0])
+        self.yellow = self.topbar.create_image(
+            34, 14, image=self.window_tool[1])
+        self.green = self.topbar.create_image(
+            54, 14, image=self.window_tool[2])
+        self.title = self.topbar.create_text(
+            width / 2, 14, text=title, font=("-weight bold"))
+        self.topbar.pack(side='top', fill='x')
+
+        self.topbar.tag_bind(self.red, "<Enter>", lambda _: self.__enter())
+        self.topbar.tag_bind(self.yellow, "<Enter>", lambda _: self.__enter())
+        self.topbar.tag_bind(self.green, "<Enter>", lambda _: self.__enter())
+
+        self.offset_x = 0
+        self.offset_y = 0
+
+        self.topbar.bind("<ButtonPress-1>", self.__start_drag)
+        self.topbar.bind("<ButtonRelease-1>", self.__stop_drag)
+        self.topbar.bind("<B1-Motion>", self.__on_drag)
+
+    def __start_drag(self, event: tk.Event):
+        self.offset_x = event.x
+        self.offset_y = event.y
+
+    def __stop_drag(self, _event):
+        self.offset_x = 0
+        self.offset_y = 0
+
+    def __on_drag(self, _event):
+        x = self.winfo_pointerx() - self.offset_x
+        y = self.winfo_pointery() - self.offset_y
+        self.geometry(f"+{x}+{y}")
+
+    def __enter(self, event=None):
+        self.text_red = self.topbar.create_text(14, 13, text="×")
+        self.text_yellow = self.topbar.create_text(34, 13, text="-")
+        self.text_green = self.topbar.create_text(54, 13, text="+")
+
+        self.topbar.tag_bind(
+            self.text_red, "<ButtonRelease-1>", lambda _: self.quit())
+        self.topbar.tag_bind(
+            self.text_yellow, "<ButtonRelease-1>", lambda _: self.wm_iconify())
+        self.topbar.tag_bind(
+            self.text_green, "<ButtonRelease-1>", lambda _: self.wm_state("zoomed"))
+
+        self.topbar.tag_bind(self.text_red, "<Leave>",
+                             lambda _: self.__leave())
+        self.topbar.tag_bind(self.text_yellow, "<Leave>",
+                             lambda _: self.__leave())
+        self.topbar.tag_bind(self.text_green, "<Leave>",
+                             lambda _: self.__leave())
+
+    def __leave(self, event=None):
+        if self.text_red:
+            self.topbar.delete(self.text_red)
+            self.text_red = None
+        if self.text_yellow:
+            self.topbar.delete(self.text_yellow)
+            self.text_yellow = None
+        if self.text_green:
+            self.topbar.delete(self.text_green)
+            self.text_green = None
+
+
+class Canvas(tk.Canvas):
+
+    """
+    Main Canvas
+    `master`: Parent window
+    `width`: Canvas width
+    `height`: Canvas height
+    """
+
+    def __init__(self, master: tk.Tk | tk.Toplevel, width, height):
+        super().__init__(master, width=width, height=height)
 
 
 class BigButton(Misc):
@@ -192,7 +268,7 @@ class Dialog(Misc, tk.Toplevel):
         else:
             print('Drag disabled')
 
-    def __start_drag(self, event):
+    def __start_drag(self, event: tk.Event):
         self.offset_x = event.x
         self.offset_y = event.y
 
@@ -521,7 +597,7 @@ class Switch(Misc):
     """
 
     def __init__(self, canvas: tk.Canvas, *, width: int = 26, height: int = 15,
-                 top: int = 20, left: int = 20, status: str = OFF, command: list = None):
+                 top: int = 20, left: int = 20, status: typing.Literal['off', 'on'] | None = OFF, command: list = None):
         super().__init__()
 
         self.canvas = canvas
@@ -532,7 +608,7 @@ class Switch(Misc):
         self.status = status
         self.command = command
         self.x = self.left + self.width / 2
-        self.knob_x = [self.left + 1 + 13 / 2, self.left + 12 + 13 / 2]
+        self.knob_x = self.left + 1 + 13 / 2
         self.y = self.top + self.height / 2
         self.knob_y = self.top + 1 + 13 / 2
 
@@ -540,10 +616,8 @@ class Switch(Misc):
                        ImageTk.PhotoImage(self.get_image(
                            "./images/Switch-Off.png", self.width, self.height))
                        ]
-        self.knob_img = [ImageTk.PhotoImage(self.get_image("./images/Switch-Off-Knob.png", 13, 13)),
-                         ImageTk.PhotoImage(self.get_image(
-                             "./images/Switch-On-Knob.png", 13, 13))
-                         ]
+        self.knob_img = ImageTk.PhotoImage(
+            self.get_image("./images/Switch-Off-Knob.png", 13, 13))
 
         self.fill_img = [ImageTk.PhotoImage(self.get_image("./images/Switch-Off-Fill.png", self.width, self.height)),
                          ImageTk.PhotoImage(self.get_image(
@@ -556,14 +630,21 @@ class Switch(Misc):
             self.fill = self.canvas.create_image(
                 self.x, self.y, image=self.fill_img[0])
             self.knob = self.canvas.create_image(
-                self.knob_x[0], self.knob_y, image=self.knob_img[0])
+                self.knob_x, self.knob_y, image=self.knob_img)
         elif self.status == 'on':
             # self.switch = self.canvas.create_image(
             #    self.x, self.y, image=self.images[0])
             self.fill = self.canvas.create_image(
                 self.x, self.y, image=self.fill_img[1])
             self.knob = self.canvas.create_image(
-                self.knob_x[1], self.knob_y, image=self.knob_img[1])
+                self.knob_x, self.knob_y, image=self.knob_img)
+            animation.Animation(
+                300,
+                animation.rebound,
+                callback=lambda x: self.canvas.move(self.knob, x*0.6, 0),
+                end=None,
+                fps=60
+            ).start(delay=0)
         else:
             raise SyntaxError(f"Unknown status: {self.status}")
 
@@ -578,9 +659,9 @@ class Switch(Misc):
             self.fill = self.canvas.create_image(
                 self.x, self.y, image=self.fill_img[1])
             self.canvas.lift(self.knob, self.fill)
-            animate.Animation(
+            animation.Animation(
                 300,
-                controller.rebound,
+                animation.rebound,
                 callback=lambda x: self.canvas.move(self.knob, x*0.6, 0),
                 end=None,
                 fps=60
@@ -597,9 +678,9 @@ class Switch(Misc):
             self.fill = self.canvas.create_image(
                 self.x, self.y, image=self.fill_img[0])
             self.canvas.lift(self.knob, self.fill)
-            animate.Animation(
+            animation.Animation(
                 300,
-                controller.rebound,
+                animation.rebound,
                 callback=lambda x: self.canvas.move(self.knob, x*-0.6, 0),
                 end=None,
                 fps=60
