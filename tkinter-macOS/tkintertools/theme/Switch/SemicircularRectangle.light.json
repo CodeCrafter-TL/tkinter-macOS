@@ -1,0 +1,26 @@
+{
+    "normal-off": {
+        "fill": "#e1e1e1",
+        "outline": "#c2c2c2"
+    },
+    "hover-off": {
+        "fill": "#e1e1e1",
+        "outline": "#c2c2c2"
+    },
+    "active-off": {
+        "fill": "#e1e1e1",
+        "outline": "#c2c2c2"
+    },
+    "normal-on": {
+        "fill": "#0c6fe8",
+        "outline": "#0c6fe8"
+    },
+    "hover-on": {
+        "fill": "#0c6fe8",
+        "outline": "#0c6fe8"
+    },
+    "active-on": {
+        "fill": "#0c6fe8",
+        "outline": "#0c6fe8"
+    }
+}

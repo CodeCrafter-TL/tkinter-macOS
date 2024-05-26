@@ -1,0 +1,11 @@
+{
+    "normal": {
+        "fill": "#1A1A1A"
+    },
+    "hover": {
+        "fill": "blue"
+    },
+    "active": {
+        "fill": "purple"
+    }
+}
