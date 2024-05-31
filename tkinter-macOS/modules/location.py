@@ -1,2 +1,0 @@
-ON = 'on'
-OFF = 'off'
